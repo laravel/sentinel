@@ -58,7 +58,7 @@ jobs:
       - name: Remove static analysis & code standard dependencies
         run: |
            composer remove --dev "laravel/pint" --no-update --no-progress
-           composer remove --dev "phpstan/phptan" --no-update --no-progress
+           composer remove --dev "phpstan/phpstan" --no-update --no-progress
 
       - name: Install dependencies
         run: |
