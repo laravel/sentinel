@@ -214,6 +214,40 @@ class LaravelDriverTest extends TestCase
     }
 
     // ---------------------------------------------------------------
+    // IPv4-mapped IPv6 edge cases
+    // ---------------------------------------------------------------
+
+    public function test_ipv4_mapped_ipv6_docker_address_allowed(): void
+    {
+        $driver = Sentinel::driver();
+
+        // Some servers present Docker IPs as IPv4-mapped IPv6
+        $request = $this->createRequest(
+            remoteAddr: '::ffff:172.18.0.1',
+            host: 'localhost',
+            trustedProxies: ['::ffff:172.18.0.1'],
+            forwardedFor: '203.0.113.50',
+        );
+
+        $this->assertTrue($driver->authorize($request));
+    }
+
+    public function test_ipv4_mapped_ipv6_loopback_blocked(): void
+    {
+        $driver = Sentinel::driver();
+
+        // IPv4-mapped loopback must be blocked (tunnel could present this way)
+        $request = $this->createRequest(
+            remoteAddr: '::ffff:127.0.0.1',
+            host: 'myapp.example.com',
+            trustedProxies: ['::ffff:127.0.0.1'],
+            forwardedFor: '203.0.113.50',
+        );
+
+        $this->assertFalse($driver->authorize($request));
+    }
+
+    // ---------------------------------------------------------------
     // Tunnel services — must remain blocked
     // ---------------------------------------------------------------
 

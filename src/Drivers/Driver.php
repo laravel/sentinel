@@ -47,11 +47,12 @@ abstract class Driver
 
             // If the direct connecting IP is from a private network (RFC1918/ULA),
             // this is a legitimate reverse proxy such as Docker or a local load
-            // balancer. Loopback addresses (127.x, ::1) are excluded because
-            // tunnel services like Expose and ngrok connect from loopback.
+            // balancer. Loopback addresses (127.x, ::1, and their IPv4-mapped
+            // IPv6 equivalents) are excluded because tunnel services like Expose
+            // and ngrok connect from loopback.
             if ($remoteAddr !== ''
                 && $this->isPrivateIp($remoteAddr)
-                && ! IpUtils::checkIp($remoteAddr, ['127.0.0.0/8', '::1/128'])) {
+                && ! IpUtils::checkIp($remoteAddr, ['127.0.0.0/8', '::1/128', '::ffff:127.0.0.0/104'])) {
                 return true;
             }
 
