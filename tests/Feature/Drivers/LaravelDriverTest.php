@@ -326,6 +326,36 @@ class LaravelDriverTest extends TestCase
         $this->assertFalse($driver->authorize($request));
     }
 
+    public function test_expose_tunnel_blocked_with_trusted_proxy_no_forwarded_headers(): void
+    {
+        $driver = Sentinel::driver();
+
+        // Bug 2 fix: tunnel hostname is blocked even when trusted proxy is
+        // configured and no X-Forwarded-For headers are present.
+        // Previously this returned true (allowed) because the hostname check
+        // was gated behind !isFromTrustedProxy().
+        $request = $this->createRequest(
+            remoteAddr: '127.0.0.1',
+            host: 'myapp.sharedwithexpose.com',
+            trustedProxies: ['127.0.0.1'],
+        );
+
+        $this->assertFalse($driver->authorize($request));
+    }
+
+    public function test_ngrok_tunnel_blocked_with_trusted_proxy_no_forwarded_headers(): void
+    {
+        $driver = Sentinel::driver();
+
+        $request = $this->createRequest(
+            remoteAddr: '127.0.0.1',
+            host: 'abc123.ngrok-free.app',
+            trustedProxies: ['127.0.0.1'],
+        );
+
+        $this->assertFalse($driver->authorize($request));
+    }
+
     public function test_cloudflare_tunnel_loopback_blocked(): void
     {
         $driver = Sentinel::driver();
