@@ -43,6 +43,15 @@ abstract class Driver
     protected function authorizeAccessingViaReverseProxies(Request $request): bool
     {
         if (! $this->isPrivateIp($request->ip()) && $request->isFromTrustedProxy()) {
+            $remoteAddr = $request->server->get('REMOTE_ADDR', '');
+
+            // Allow requests from private network proxies (Docker, Sail, etc.)
+            // but not from loopback, which tunnel services use.
+            if ($this->isPrivateIp($remoteAddr)
+                && ! IpUtils::checkIp($remoteAddr, ['127.0.0.0/8', '::1/128', '::ffff:127.0.0.0/104'])) {
+                return true;
+            }
+
             return false;
         }
 

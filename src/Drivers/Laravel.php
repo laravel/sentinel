@@ -19,12 +19,14 @@ class Laravel extends Driver
             return true;
         }
 
-        if ($this->isPrivateIp($request->ip())
-            && ! $request->isFromTrustedProxy()
-            && Str::endsWith($request->host(), ['.sharedwithexpose.com', '.ngrok-free.app', '.ngrok.io'])) {
-            throw new RuntimeException(
-                sprintf('Unable to access "%s /%s" using "local" environment, please change the environment or configure trusted proxies: https://laravel.com/docs/requests#configuring-trusted-proxies', $request->method(), $request->path())
-            );
+        if (Str::endsWith($request->host(), ['.sharedwithexpose.com', '.ngrok-free.app', '.ngrok.io'])) {
+            if (! $request->isFromTrustedProxy()) {
+                throw new RuntimeException(
+                    sprintf('Unable to access "%s /%s" using "local" environment, please change the environment or configure trusted proxies: https://laravel.com/docs/requests#configuring-trusted-proxies', $request->method(), $request->path())
+                );
+            }
+
+            return false;
         }
 
         return $this->authorizeAccessingViaReverseProxies($request);
