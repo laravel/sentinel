@@ -29,7 +29,7 @@ class DriverTest extends TestCase
         Request::setTrustedProxies(['127.0.0.1'], SymfonyRequest::HEADER_X_FORWARDED_FOR | SymfonyRequest::HEADER_X_FORWARDED_HOST | SymfonyRequest::HEADER_X_FORWARDED_PORT | SymfonyRequest::HEADER_X_FORWARDED_PROTO);
 
         $manager = $app->make(SentinelManager::class);
-        
+
         $manager->extend('testing', function ($app) {
             return new class(fn () => $app) extends Driver
             {
