@@ -3,18 +3,19 @@
 namespace Laravel\Sentinel;
 
 use Illuminate\Support\Manager;
+use Laravel\Sentinel\Drivers\Laravel;
 
 class SentinelManager extends Manager
 {
     /**
      * Create default "laravel" driver.
      *
-     * @return \Laravel\Sentinel\Drivers\Laravel
+     * @return Laravel
      */
     protected function createLaravelDriver()
     {
         /** @phpstan-ignore argument.type */
-        return new Drivers\Laravel(fn () => $this->getContainer());
+        return new Laravel(fn () => $this->getContainer());
     }
 
     /**

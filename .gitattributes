@@ -17,5 +17,6 @@ CHANGELOG.md export-ignore
 package-lock.json export-ignore
 phpstan.neon.dist export-ignore
 phpunit.xml.dist export-ignore
+testbench.yaml export-ignore
 RELEASE.md export-ignore
 UPGRADE.md export-ignore

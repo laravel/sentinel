@@ -11,7 +11,7 @@ class Laravel extends Driver
     /**
      * Authorize access for the request.
      *
-     * @throws \RuntimeException
+     * @throws RuntimeException
      */
     public function authorize(Request $request): bool
     {
