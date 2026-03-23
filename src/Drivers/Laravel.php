@@ -27,6 +27,10 @@ class Laravel extends Driver
             );
         }
 
+        if ($this->isRunningOnDockerLocally($request)) {
+            return true;
+        }
+
         return $this->authorizeAccessingViaReverseProxies($request);
     }
 }

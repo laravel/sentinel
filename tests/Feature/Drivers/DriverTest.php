@@ -3,26 +3,49 @@
 namespace Tests\Feature\Drivers;
 
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Http\Request;
 use Laravel\Sentinel\Drivers\Driver;
 use Laravel\Sentinel\Sentinel;
 use Laravel\Sentinel\SentinelManager;
+use Orchestra\Testbench\Concerns\InteractsWithPublishedFiles;
 use Symfony\Component\HttpFoundation\Request as SymfonyRequest;
 use Tests\TestCase;
 
 class DriverTest extends TestCase
 {
+    use InteractsWithPublishedFiles;
+
+    /**
+     * List of published files to be deleted after the test.
+     */
+    protected $files = [
+        '.dockerenv',
+    ];
+
     /** {@inheritdoc} */
     protected function defineEnvironment($app): void
     {
         Request::setTrustedProxies(['127.0.0.1'], SymfonyRequest::HEADER_X_FORWARDED_FOR | SymfonyRequest::HEADER_X_FORWARDED_HOST | SymfonyRequest::HEADER_X_FORWARDED_PORT | SymfonyRequest::HEADER_X_FORWARDED_PROTO);
 
-        $app->make(SentinelManager::class)->extend('testing', function ($app) {
+        $manager = $app->make(SentinelManager::class);
+        
+        $manager->extend('testing', function ($app) {
             return new class(fn () => $app) extends Driver
             {
                 public function authorize(Request $request): bool
                 {
                     return $this->authorizeAccessingViaReverseProxies($request);
+                }
+            };
+        });
+
+        $manager->extend('testing-docker', function ($app) {
+            return new class(fn () => $app) extends Driver
+            {
+                public function authorize(Request $request): bool
+                {
+                    return $this->isRunningOnDockerLocally($request);
                 }
             };
         });
@@ -83,5 +106,23 @@ class DriverTest extends TestCase
         ]));
 
         Sentinel::driver('testing')->authorizeOrFail($request);
+    }
+
+    public function test_it_can_authorize_docker_local_request()
+    {
+        $request = Request::create('GET', '/', [
+            'REMOTE_ADDR' => '127.0.0.1',
+        ]);
+
+        tap(Sentinel::driver('testing-docker'), function ($driver) use ($request) {
+            $this->assertFalse($driver->authorize($request));
+        });
+
+        $files = new Filesystem;
+        $files->put(base_path('.dockerenv'), '');
+
+        tap(Sentinel::driver('testing-docker'), function ($driver) use ($request) {
+            $this->assertTrue($driver->authorize($request));
+        });
     }
 }

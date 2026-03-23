@@ -50,6 +50,14 @@ abstract class Driver
     }
 
     /**
+     * Determine if the application is running on Docker locally.
+     */
+    protected function isRunningOnDockerLocally(Request $request): bool
+    {
+        return $request->server->get('REMOTE_ADDR') === '127.0.0.1' && file_exists(base_path('.dockerenv'));
+    }
+
+    /**
      * Checks if an IPv4 or IPv6 address is contained in the list of private IP subnets.
      */
     protected function isPrivateIp(string $requestIp): bool
