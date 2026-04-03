@@ -88,7 +88,7 @@ class DriverTest extends TestCase
         ]));
 
         tap(Sentinel::driver('testing'), function ($driver) use ($request) {
-            $this->assertFalse($driver->authorize($request));
+            $this->assertTrue($driver->authorize($request));
         });
     }
 

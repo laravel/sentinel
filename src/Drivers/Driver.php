@@ -42,7 +42,7 @@ abstract class Driver
      */
     protected function authorizeAccessingViaReverseProxies(Request $request): bool
     {
-        if (! $this->isPrivateIp($request->ip()) && $request->isFromTrustedProxy()) {
+        if (! $this->isPrivateIp($request->ip()) && ! $request->isFromTrustedProxy()) {
             return false;
         }
 
