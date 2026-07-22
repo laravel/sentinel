@@ -23,6 +23,13 @@ class DriverTest extends TestCase
         '.dockerenv',
     ];
 
+    protected function tearDown(): void
+    {
+        unset($_ENV['SENTINEL_LOCAL_IP'], $_SERVER['SENTINEL_LOCAL_IP']);
+
+        parent::tearDown();
+    }
+
     /** {@inheritdoc} */
     protected function defineEnvironment($app): void
     {
@@ -46,6 +53,26 @@ class DriverTest extends TestCase
                 public function authorize(Request $request): bool
                 {
                     return $this->isRunningOnDockerLocally($request);
+                }
+            };
+        });
+
+        $manager->extend('testing-valet', function ($app) {
+            return new class(fn () => $app) extends Driver
+            {
+                public function authorize(Request $request): bool
+                {
+                    return $this->isRunningOnValetLocally($request);
+                }
+            };
+        });
+
+        $manager->extend('testing-herd', function ($app) {
+            return new class(fn () => $app) extends Driver
+            {
+                public function authorize(Request $request): bool
+                {
+                    return $this->isRunningOnHerdLocally($request);
                 }
             };
         });
@@ -123,6 +150,74 @@ class DriverTest extends TestCase
 
         tap(Sentinel::driver('testing-docker'), function ($driver) use ($request) {
             $this->assertTrue($driver->authorize($request));
+        });
+    }
+
+    public function test_it_can_authorize_docker_local_request_with_custom_local_ip()
+    {
+        $_ENV['SENTINEL_LOCAL_IP'] = '192.168.65.1';
+
+        $files = new Filesystem;
+        $files->put(base_path('.dockerenv'), '');
+
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '127.0.0.1']);
+
+        tap(Sentinel::driver('testing-docker'), function ($driver) use ($request) {
+            $this->assertFalse($driver->authorize($request));
+        });
+
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '192.168.65.1']);
+
+        tap(Sentinel::driver('testing-docker'), function ($driver) use ($request) {
+            $this->assertTrue($driver->authorize($request));
+        });
+    }
+
+    public function test_it_can_authorize_valet_local_request_via_server_var()
+    {
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '127.0.0.1']);
+
+        tap(Sentinel::driver('testing-valet'), function ($driver) use ($request) {
+            $this->assertFalse($driver->authorize($request));
+        });
+
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '127.0.0.1', 'IS_VALET' => '1']);
+
+        tap(Sentinel::driver('testing-valet'), function ($driver) use ($request) {
+            $this->assertTrue($driver->authorize($request));
+        });
+    }
+
+    public function test_it_rejects_valet_request_from_non_local_remote_addr()
+    {
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '10.0.0.5', 'IS_VALET' => '1']);
+
+        tap(Sentinel::driver('testing-valet'), function ($driver) use ($request) {
+            $this->assertFalse($driver->authorize($request));
+        });
+    }
+
+    public function test_it_can_authorize_herd_local_request()
+    {
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '127.0.0.1']);
+
+        tap(Sentinel::driver('testing-herd'), function ($driver) use ($request) {
+            $this->assertFalse($driver->authorize($request));
+        });
+
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '127.0.0.1', 'SERVER_SOFTWARE' => 'nginx/1.25.3 (herd)']);
+
+        tap(Sentinel::driver('testing-herd'), function ($driver) use ($request) {
+            $this->assertTrue($driver->authorize($request));
+        });
+    }
+
+    public function test_it_rejects_herd_request_from_non_local_remote_addr()
+    {
+        $request = Request::create('/', 'GET', [], [], [], ['REMOTE_ADDR' => '10.0.0.5', 'SERVER_SOFTWARE' => 'nginx/1.25.3 (herd)']);
+
+        tap(Sentinel::driver('testing-herd'), function ($driver) use ($request) {
+            $this->assertFalse($driver->authorize($request));
         });
     }
 }

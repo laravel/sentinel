@@ -54,7 +54,31 @@ abstract class Driver
      */
     protected function isRunningOnDockerLocally(Request $request): bool
     {
-        return $request->server->get('REMOTE_ADDR') === '127.0.0.1' && file_exists(base_path('.dockerenv'));
+        $localIp = $_SERVER['SENTINEL_LOCAL_IP'] ?? $_ENV['SENTINEL_LOCAL_IP'] ?? '127.0.0.1';
+
+        return $request->server->get('REMOTE_ADDR') === $localIp && file_exists(base_path('.dockerenv'));
+    }
+
+    /**
+     * Determine if the application is running via Laravel Valet locally.
+     */
+    protected function isRunningOnValetLocally(Request $request): bool
+    {
+        $localIp = $_SERVER['SENTINEL_LOCAL_IP'] ?? $_ENV['SENTINEL_LOCAL_IP'] ?? '127.0.0.1';
+
+        return $request->server->get('REMOTE_ADDR') === $localIp
+            && (! empty($request->server->get('IS_VALET')) || ! empty($_SERVER['IS_VALET']) || ! empty($_ENV['IS_VALET']));
+    }
+
+    /**
+     * Determine if the application is running via Laravel Herd locally.
+     */
+    protected function isRunningOnHerdLocally(Request $request): bool
+    {
+        $localIp = $_SERVER['SENTINEL_LOCAL_IP'] ?? $_ENV['SENTINEL_LOCAL_IP'] ?? '127.0.0.1';
+
+        return $request->server->get('REMOTE_ADDR') === $localIp
+            && str_contains($request->server->get('SERVER_SOFTWARE', ''), 'herd');
     }
 
     /**

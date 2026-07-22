@@ -27,7 +27,20 @@ class Laravel extends Driver
             );
         }
 
-        if ($this->isRunningOnDockerLocally($request)) {
+        if ($this->isRunningOnDockerLocally($request)
+            || $this->isRunningOnValetLocally($request)
+            || $this->isRunningOnHerdLocally($request)) {
+            return true;
+        }
+
+        // When TrustProxies is set to '*' (common for apps behind Cloudflare or a load
+        // balancer), $request->ip() resolves to the X-Forwarded-For value rather than
+        // the real connecting IP. Local dev tools like Valet and Herd inject forwarded
+        // headers through their nginx layer, which can expose a non-private resolved IP
+        // even though the actual TCP connection originates from localhost. Checking
+        // REMOTE_ADDR directly bypasses proxy resolution and reliably identifies
+        // connections that come straight from the local machine.
+        if ($this->isPrivateIp($request->server->get('REMOTE_ADDR', ''))) {
             return true;
         }
 
