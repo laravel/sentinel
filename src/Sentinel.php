@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \Laravel\Sentinel\SentinelManager setContainer(\Illuminate\Contracts\Container\Container $container)
  * @method static \Laravel\Sentinel\SentinelManager forgetDrivers()
  *
- * @see SentinelManager
+ * @see \Laravel\Sentinel\SentinelManager
  */
 class Sentinel extends Facade
 {
